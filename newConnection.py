@@ -135,7 +135,7 @@ app.layout = html.Div([
 ])
 
 
-def create_run_list(runs):
+def create_run_list(runs, job_name):
     list_rows = []
     for run in runs:
         # Convert start_time to readable format
@@ -159,7 +159,7 @@ def create_run_list(runs):
 
         # Create a row for each run with border and colored result state
         row = dbc.Row([
-            dbc.Col(html.P(run.get('settings', {}).get('name', 'N/A')), style={'border': '1px solid black'}, width=1),
+            dbc.Col(html.P(job_name), style={'border': '1px solid black'}, width=1),
             dbc.Col(html.P(str(run.get('run_id', 'N/A'))), style={'border': '1px solid black'}, width=2),
             dbc.Col(html.P(start_timeR), style={'border': '1px solid black'}, width=2),
             dbc.Col(html.P(duration), style={'border': '1px solid black'}, width=2),
@@ -202,7 +202,7 @@ def display_click(button_clicks, n_intervals, button_states):
                dbc.Col(html.P(f"State"), style={'border': '1px solid black', 'font-weight': 'bold'}, width=2),
                dbc.Col(html.P((f"Result")), style={'border': '1px solid black', 'font-weight': 'bold'}, width=3)
                ]),
-             html.Div(create_run_list(runs), style={"margin-top": "16px"})
+             html.Div(create_run_list(runs, job_name), style={"margin-top": "16px"})
               ])]
 
             return output_layout
