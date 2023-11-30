@@ -3,7 +3,7 @@ import requests
 import json
 import dash
 import dash_bootstrap_components as dbc
-from dash import html, dcc, callback, Input, Output
+from dash import html, dcc, callback, Input, Output, State
 import tokens
 from datetime import datetime
 
@@ -11,10 +11,11 @@ from datetime import datetime
 # get auth tokens
 DENV = tokens.DBXEnvironment("dev")
 
+# assign the token and host to variables
 DOMAIN = DENV.host
 TOKEN = DENV.token
 
-# API endpoint for listing jobs
+# API endpoints for listing jobs
 job_url = DOMAIN + '/api/2.0/jobs/list'
 jobRuns_url = DOMAIN + '/api/2.0/jobs/runs/list'
 
@@ -48,8 +49,10 @@ def list_jobs():
     else:
         print(f"Failed to list jobs: {response.status_code} - {response.text}")
 
+# the jobs variable is initialized
 jobs = list_jobs()
 
+# Fetches only the last run of a job. Greatly accelerates the initialization
 def lastRun(job_id):
     payload = {'job_id': job_id, 'active_only': False, 'limit': 1}  # Fetch only the most recent run
     responseR = requests.get(jobRuns_url, headers=headers, params=payload)
@@ -69,9 +72,11 @@ def lastRun(job_id):
             # Include result state
             run['result_state'] = run.get('state', {}).get('result_state', 'N/A')
 
+            #the duration is displated as 0 unless the job is complete
             if run['result_state'] == 'N/A': run['formatted_duration'] = str(0) 
-
-            result_color = 'green' if run['result_state'] == 'SUCCESS' else 'red' if run['result_state'] == 'FAILED' else 'blue' if run['result_state'] == 'RUNNING' else 'black'
+            
+            # aids the next function by assingning a color depending on the result
+            result_color = '#00f600' if run['result_state'] == 'SUCCESS' else 'red' if run['result_state'] == 'FAILED' else 'blue' if run['result_state'] == 'RUNNING' else 'black'
             run['result_color'] = result_color
 
             return run
@@ -83,7 +88,8 @@ def lastRun(job_id):
 def create_card_rows(jobs, cards_per_row=4):
     # Dictionary to hold the last run details for each job
     last_run_details = {job['job_id']: lastRun(job['job_id']) for job in jobs}
-
+    
+    # cards are generated in rows
     rows = []
     for i in range(0, len(jobs), cards_per_row):
         row_jobs = jobs[i:i+cards_per_row]
@@ -103,7 +109,7 @@ def create_card_rows(jobs, cards_per_row=4):
                         dbc.Button("Show All Runs", id={'type': 'show-all-runs-button', 'index': idx}, n_clicks=0, className="button-click-effect")
                     ]),
                     style={"width": "18rem", "margin": "15px", 
-                           "border": "3px solid",
+                           "border": "4px solid",
                            "border-color": last_run_details[job['job_id']].get('result_color', 'N/A') if last_run_details[job['job_id']] else 'N/A'}
                 )
             ) for idx, job in enumerate(row_jobs, start=i)],
@@ -112,16 +118,24 @@ def create_card_rows(jobs, cards_per_row=4):
         rows.append(row)
     return rows
 
+# initialises the section for the list of runs
+def initRunSection():
+    return "No Jobs Were Selected"
 
 # App layout
 app.layout = html.Div([
     html.H1('Job Details and Runs'),
     html.Div(id='job-cards', children=create_card_rows(jobs)),
-    html.Div(id='button-click-output'),
+    dcc.Interval(
+        id='interval-component',
+        interval= 60*5*1000,  # in milliseconds so 5 minutes
+        n_intervals=0
+    ),
+    html.Div(id='button-click-output', children = initRunSection())
 ])
 
 
-def create_run_list(runs, index):
+def create_run_list(runs):
     list_rows = []
     for run in runs:
         # Convert start_time to readable format
@@ -159,36 +173,56 @@ def create_run_list(runs, index):
 # Callback for handling button click
 @app.callback(
     Output('button-click-output', 'children'),
-    [Input({'type': 'show-all-runs-button', 'index': dash.ALL}, 'n_clicks')]
+    [Input({'type': 'show-all-runs-button', 'index': dash.ALL}, 'n_clicks'),
+     Input('interval-component', 'n_intervals')],
+    [State({'type': 'show-all-runs-button', 'index': dash.ALL}, 'n_clicks')],
 )
-def display_click(btn_clicks):
-    ctx = dash.callback_context
 
-    if not ctx.triggered:
-        return "No job selected"
-    else:
+def display_click(button_clicks, n_intervals, button_states):
+    ctx = dash.callback_context
+    # Determine what triggered the callback
+    if ctx.triggered and ctx.triggered[0]['prop_id'].split('.')[0] != 'interval-component':
         button_id = ctx.triggered[0]['prop_id'].split('.')[0]
         index = json.loads(button_id)['index']
-        job_id = jobs[index]['job_id']
-        runs = jobRuns(job_id)
+        # Ensure the button was actually clicked
+        if button_states[index] > 0:
+            job_id = jobs[index]['job_id']
+            runs = jobRuns(job_id)
+            job_name = jobs[index].get('settings', {}).get('name', f"Job ID: {jobs[index]['job_id']}")
 
-        job_name = jobs[index].get('settings', {}).get('name', f"Job ID: {jobs[index]['job_id']}")
 
-        output_layout = [html.Div([
-            html.P(f"Runs for the Job: {job_name}", 
+            output_layout = [html.Div([
+             html.P(f"Runs for the Job: {job_name}", 
                    style={'color': 'black', 'font-size': '35px' }),
-            dbc.Row([
-              dbc.Col(html.P(f"Run Name"), style={'border': '1px solid black', 'font-weight': 'bold'}, width=1),
-              dbc.Col(html.P(f"Run ID"), style={'border': '1px solid black', 'font-weight': 'bold'}, width=2),
-              dbc.Col(html.P(f"Start Time"), style={'border': '1px solid black', 'font-weight': 'bold'}, width=2),
-              dbc.Col(html.P(f"Duration"), style={'border': '1px solid black', 'font-weight': 'bold'}, width=2),
-              dbc.Col(html.P(f"State"), style={'border': '1px solid black', 'font-weight': 'bold'}, width=2),
-              dbc.Col(html.P((f"Result")), style={'border': '1px solid black', 'font-weight': 'bold'}, width=3)
-         ]),
-            html.Div(create_run_list(runs, index), style={"margin-top": "16px"})
-        ])]
+             dbc.Row([
+               dbc.Col(html.P(f"Run Name"), style={'border': '1px solid black', 'font-weight': 'bold'}, width=1),
+               dbc.Col(html.P(f"Run ID"), style={'border': '1px solid black', 'font-weight': 'bold'}, width=2),
+               dbc.Col(html.P(f"Start Time"), style={'border': '1px solid black', 'font-weight': 'bold'}, width=2),
+               dbc.Col(html.P(f"Duration"), style={'border': '1px solid black', 'font-weight': 'bold'}, width=2),
+               dbc.Col(html.P(f"State"), style={'border': '1px solid black', 'font-weight': 'bold'}, width=2),
+               dbc.Col(html.P((f"Result")), style={'border': '1px solid black', 'font-weight': 'bold'}, width=3)
+               ]),
+             html.Div(create_run_list(runs), style={"margin-top": "16px"})
+              ])]
 
-        return output_layout
+            return output_layout
+        return dash.no_update
+    return dash.no_update
+       
+    
+    
+# Callback to update cards every 5 minutes
+@app.callback(
+    Output('job-cards', 'children'),
+    Input('interval-component', 'n_intervals'),
+    prevent_initial_call=True
+)
+
+# upgrade cards
+def update_cards(n):
+    jobs = list_jobs()
+    return create_card_rows(jobs)
+    
 
 if __name__ == '__main__':
     app.run_server(debug=False)
