@@ -122,18 +122,21 @@ def create_card_rows(jobs, cards_per_row=4):
 def initRunSection():
     return "No Jobs Were Selected"
 
-def listOfJobsW(jobs):
+def listOfJobsW(jobs, filter_text=""):
+    filtered_jobs = [job for job in jobs if filter_text.lower() in job.get('settings', {}).get('name', f"Job ID: {job['job_id']}").lower()]
     rows = []
-    for job in jobs:
+    for job in filtered_jobs:
         job_name = job.get('settings', {}).get('name', f"Job ID: {job['job_id']}")
         checkbox = dbc.Checkbox(
             id={"type": "dynamic-checkbox", "index": job['job_id']},
             className="form-check-input",
-            label=job_name
+            label=job_name,
+            persistence=True
         )
         row = dbc.Row(
-            dbc.Col(html.Div(checkbox, className="form-check"), width=12),
-            className="mb-2"  # Add margin for spacing between rows
+            dbc.Col(html.P(checkbox, className="form-check"), width=6),
+            className="mb-2",  # Add margin for spacing between rows
+            style = {"margin-top": "10px"}
         )
         rows.append(row)
     return rows
@@ -153,9 +156,12 @@ app.layout = html.Div([
      dbc.Modal(
             [
                 dbc.ModalHeader("Jobs to Display", style = {'font-size': '25px'}),
-                dbc.ModalBody(children =listOfJobsW(jobs)),
+                dbc.ModalBody([
+                   dbc.Input(id="job-search-bar", placeholder="Search jobs...", type="text"),
+                   html.Div(id="job-list-container", children=listOfJobsW(jobs)),
+                 ]),
                 dbc.ModalFooter(
-                    dbc.Button("Save and Close the Window", id="close", className="buttonConfClose")
+                    dbc.Button("Apply and Close the Window", id="close", className="buttonConfClose")
                 ),
             ],
             id="configure-window",
@@ -261,7 +267,18 @@ def toggle_modal(n1, n2, is_open):
         return not is_open
     return is_open
 
-    
+@app.callback(
+    Output("job-list-container", "children"),
+    Input("job-search-bar", "value")
+)
+def update_job_list(search_value):
+    if not search_value:
+        # If the search bar is empty, show all jobs
+        return listOfJobsW(jobs)
+    else:
+        # Filter the jobs based on the search input
+        return listOfJobsW(jobs, filter_text=search_value)
+
 
 if __name__ == '__main__':
     app.run_server(debug=False)
