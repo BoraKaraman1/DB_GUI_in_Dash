@@ -122,6 +122,23 @@ def create_card_rows(jobs, cards_per_row=4):
 def initRunSection():
     return "No Jobs Were Selected"
 
+def listOfJobsW(jobs):
+    rows = []
+    for job in jobs:
+        job_name = job.get('settings', {}).get('name', f"Job ID: {job['job_id']}")
+        checkbox = dbc.Checkbox(
+            id={"type": "dynamic-checkbox", "index": job['job_id']},
+            className="form-check-input",
+            label=job_name
+        )
+        row = dbc.Row(
+            dbc.Col(html.Div(checkbox, className="form-check"), width=12),
+            className="mb-2"  # Add margin for spacing between rows
+        )
+        rows.append(row)
+    return rows
+
+
 # App layout
 app.layout = html.Div([
     html.H1('Job Details and Runs'),
@@ -131,7 +148,18 @@ app.layout = html.Div([
         interval= 60*5*1000,  # in milliseconds so 5 minutes
         n_intervals=0
     ),
-    html.Div(id='button-click-output', children = initRunSection())
+    dbc.Button("Configure", id= 'configure-button', n_clicks=0, className="buttonC"),
+    html.Div(id='button-click-output', children = initRunSection()),
+     dbc.Modal(
+            [
+                dbc.ModalHeader("Jobs to Display", style = {'font-size': '25px'}),
+                dbc.ModalBody(children =listOfJobsW(jobs)),
+                dbc.ModalFooter(
+                    dbc.Button("Save and Close the Window", id="close", className="buttonConfClose")
+                ),
+            ],
+            id="configure-window",
+        )
 ])
 
 
@@ -159,12 +187,12 @@ def create_run_list(runs, job_name):
 
         # Create a row for each run with border and colored result state
         row = dbc.Row([
-            dbc.Col(html.P(job_name), style={'border': '1px solid black'}, width=1),
-            dbc.Col(html.P(str(run.get('run_id', 'N/A'))), style={'border': '1px solid black'}, width=2),
-            dbc.Col(html.P(start_timeR), style={'border': '1px solid black'}, width=2),
-            dbc.Col(html.P(duration), style={'border': '1px solid black'}, width=2),
-            dbc.Col(html.P(run.get('state', {}).get('life_cycle_state', 'N/A')), style={'border': '1px solid black'}, width=2),
-            dbc.Col(html.P(result_state, style={'color': result_color}), style={'border': '1px solid black'}, width=3),
+            dbc.Col(html.P(job_name), style={'border': '1px solid black', 'font-size': '15px', "margin-left": "20px"}, width=1),
+            dbc.Col(html.P(str(run.get('run_id', 'N/A'))), style={'border': '1px solid black', 'font-size': '15px'}, width=2),
+            dbc.Col(html.P(start_timeR), style={'border': '1px solid black', 'font-size': '15px'}, width=2),
+            dbc.Col(html.P(duration), style={'border': '1px solid black', 'font-size': '15px'}, width=1),
+            dbc.Col(html.P(run.get('state', {}).get('life_cycle_state', 'N/A')), style={'border': '1px solid black', 'font-size': '15px'}, width=2),
+            dbc.Col(html.P(result_state, style={'color': result_color}), style={'border': '1px solid black', 'font-size': '15px'}, width=3),
         ], className="mb-2")
         list_rows.append(row)
     return list_rows
@@ -195,12 +223,12 @@ def display_click(button_clicks, n_intervals, button_states):
              html.P(f"Runs for the Job: {job_name}", 
                    style={'color': 'black', 'font-size': '35px' }),
              dbc.Row([
-               dbc.Col(html.P(f"Run Name"), style={'border': '1px solid black', 'font-weight': 'bold'}, width=1),
-               dbc.Col(html.P(f"Run ID"), style={'border': '1px solid black', 'font-weight': 'bold'}, width=2),
-               dbc.Col(html.P(f"Start Time"), style={'border': '1px solid black', 'font-weight': 'bold'}, width=2),
-               dbc.Col(html.P(f"Duration"), style={'border': '1px solid black', 'font-weight': 'bold'}, width=2),
-               dbc.Col(html.P(f"State"), style={'border': '1px solid black', 'font-weight': 'bold'}, width=2),
-               dbc.Col(html.P((f"Result")), style={'border': '1px solid black', 'font-weight': 'bold'}, width=3)
+               dbc.Col(html.P(f"Run Name"), style={'border': '1px solid black', 'font-weight': 'bold', 'font-size': '15px', "margin-left": "20px"}, width=1),
+               dbc.Col(html.P(f"Run ID"), style={'border': '1px solid black', 'font-weight': 'bold', 'font-size': '15px'}, width=2),
+               dbc.Col(html.P(f"Start Time"), style={'border': '1px solid black', 'font-weight': 'bold', 'font-size': '15px'}, width=2),
+               dbc.Col(html.P(f"Duration"), style={'border': '1px solid black', 'font-weight': 'bold', 'font-size': '15px'}, width=1),
+               dbc.Col(html.P(f"State"), style={'border': '1px solid black', 'font-weight': 'bold', 'font-size': '15px'}, width=2),
+               dbc.Col(html.P((f"Result")), style={'border': '1px solid black', 'font-weight': 'bold', 'font-size': '15px'}, width=3)
                ]),
              html.Div(create_run_list(runs, job_name), style={"margin-top": "16px"})
               ])]
@@ -222,6 +250,17 @@ def display_click(button_clicks, n_intervals, button_states):
 def update_cards(n):
     jobs = list_jobs()
     return create_card_rows(jobs)
+
+@app.callback(
+    Output("configure-window", "is_open"),
+    [Input("configure-button", "n_clicks"), Input("close", "n_clicks")],
+    [State("configure-window", "is_open")],
+)
+def toggle_modal(n1, n2, is_open):
+    if n1 or n2:
+        return not is_open
+    return is_open
+
     
 
 if __name__ == '__main__':
