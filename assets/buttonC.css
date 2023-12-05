@@ -42,4 +42,5 @@
 .buttonC:active {
   box-shadow: none;
   transform: translateY(0);
+  background-color: #412c97 !important;
 }

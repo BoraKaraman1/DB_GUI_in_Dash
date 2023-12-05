@@ -21,7 +21,7 @@
     user-select: none;
     -webkit-user-select: none;
     touch-action: manipulation;
-    width: 25%;
+    width: 28%;
     will-change: transform;
   }
   
@@ -37,4 +37,5 @@
   .buttonConfClose:active {
     box-shadow: none;
     transform: translateY(0);
+    background-color: #412c97 !important;
   }
