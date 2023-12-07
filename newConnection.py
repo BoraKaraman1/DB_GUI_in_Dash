@@ -331,8 +331,7 @@ def display_click(button_clicks, n_intervals, button_states, selected_jobs):
 def update_cards(n, checkbox_states, refreshB, jobs):
 
     if n or refreshB:
-       print("triggered")
-       jobs = list_jobs() #jobs are re-fetched from dataricks every 5 minutes or when the rfresh is pressed
+       jobs = list_jobs() #jobs are refetched from databricks every 5 minutes or when the refresh is pressed
 
 
      #Filter the jobs based on the checkbox states
@@ -361,7 +360,7 @@ def toggle_modal(n1, n2, is_open):
         return not is_open
     return is_open
 
-#updates the storage that hold which jobs were selected on the pop-up window. Only called after the button on the window is clicked
+#updates the storage that holds which jobs were selected on the pop-up window. Only called after the button on the window is clicked
 @app.callback(
     Output('checkbox-states', 'data'),
     Input("close", "n_clicks"),
