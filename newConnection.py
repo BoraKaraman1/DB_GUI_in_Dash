@@ -185,7 +185,7 @@ def listOfJobsW(jobs, filter_text=""):
             className="form-check-input",
             label=job_name,
             persistence=True,
-            value = job['job_id']
+            value = False
         )
         row = dbc.Row(
             dbc.Col(html.P(checkbox, className="form-check")),
@@ -202,10 +202,11 @@ app.layout = html.Div([
     html.Div(id='job-cards'),
     dcc.Interval(
         id='interval-component',
-        interval= 10*1*1000,  # in milliseconds so 5 minutes
+        interval= 5*60*1000,  # in milliseconds so 5 minutes
         n_intervals=0
     ),
     dbc.Button("Configure", id= 'configure-button', n_clicks=0, className="buttonC"),
+    dbc.Button("Refresh", id= 'refresh-button', n_clicks=0, className="buttonR"),
     html.Div(id='button-click-output', children = initRunSection()),
     dcc.Store(id='checkbox-states', storage_type='local'),
     dcc.Store(id = 'jobs', storage_type='local', data = list_jobs()),
@@ -321,14 +322,16 @@ def display_click(button_clicks, n_intervals, button_states, selected_jobs):
     Output('selected_jobs', 'data'),
     Output('jobs','data')],
     [Input('interval-component', 'n_intervals'),
-     Input('checkbox-states', 'data')],
-     State('jobs', 'data'),
+    Input('checkbox-states', 'data'),
+    Input("refresh-button", "n_clicks")],
+    State('jobs', 'data'),
 )
 
 # upgrade cards
-def update_cards(n, checkbox_states, jobs):
+def update_cards(n, checkbox_states, refreshB, jobs):
 
-    if n:
+    if n or refreshB:
+       print("triggered")
        jobs = list_jobs() #jobs are re-fetched from dataricks every 5 minutes
 
 
