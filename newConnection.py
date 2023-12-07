@@ -316,7 +316,7 @@ def display_click(button_clicks, n_intervals, button_states, selected_jobs):
        
     
     
-# Callback to update cards every 5 minutes and each time the selection is changed
+# Callback to update cards every 5 minutes, when the refresh button is clicked or each time the selection is changed
 @app.callback(
     [Output('job-cards', 'children'),
     Output('selected_jobs', 'data'),
@@ -332,7 +332,7 @@ def update_cards(n, checkbox_states, refreshB, jobs):
 
     if n or refreshB:
        print("triggered")
-       jobs = list_jobs() #jobs are re-fetched from dataricks every 5 minutes
+       jobs = list_jobs() #jobs are re-fetched from dataricks every 5 minutes or when the rfresh is pressed
 
 
      #Filter the jobs based on the checkbox states
