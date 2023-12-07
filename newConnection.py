@@ -1,4 +1,3 @@
-from databricks.sdk import WorkspaceClient
 import requests
 import json
 import dash
@@ -29,6 +28,17 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
 # get the runs of a job
 def jobRuns(job_id):
+
+  """
+  Get the runs of a job from the API.
+    
+  Args:
+  job_id (str): The ID of the job for which runs are to be fetched.
+
+  Returns:
+  list: A list of runs for the given job, or an empty list if the request fails.
+  """ 
+  
   payload = {'job_id': job_id}
   responseR = requests.get(jobRuns_url, headers = headers, params = payload)
   if responseR.status_code == 200:
@@ -40,20 +50,37 @@ def jobRuns(job_id):
 
 # get jobs
 def list_jobs():
+
+    """
+    Fetch the list of jobs from the API.
+    
+    Returns:
+    list: A list of jobs, or None if the request fails.
+    """
+      
     response = requests.get(job_url, headers=headers)
     if response.status_code == 200:
-        # Parse and print the job list
+        # Parse the job list
         jobs = response.json().get('jobs', [])
         return jobs
            
     else:
         print(f"Failed to list jobs: {response.status_code} - {response.text}")
 
-# the jobs variable is initialized
-jobs = list_jobs()
 
 # Fetches only the last run of a job. Greatly accelerates the initialization
 def lastRun(job_id):
+
+    """
+    Fetches the most recent run of a specified job.
+
+    Args:
+    job_id (str): The ID of the job for which the last run is to be fetched.
+
+    Returns:
+    dict: A dictionary containing details of the last run, or None if no runs are found.
+    """
+
     payload = {'job_id': job_id, 'active_only': False, 'limit': 1}  # Fetch only the most recent run
     responseR = requests.get(jobRuns_url, headers=headers, params=payload)
     if responseR.status_code == 200:
@@ -86,9 +113,21 @@ def lastRun(job_id):
 
 # Function to create rows of cards
 def create_card_rows(jobs, cards_per_row=4):
+
+    """
+    Creates rows of cards displaying job details.
+
+    Args:
+    jobs (list): A list of job dictionaries.
+    cards_per_row (int): Number of cards to display per row.
+
+    Returns:
+    list: A list of dbc.Row objects, each containing a row of cards.
+    """
+
+
     # Dictionary to hold the last run details for each job
     last_run_details = {job['job_id']: lastRun(job['job_id']) for job in jobs}
-    
     # cards are generated in rows
     rows = []
     for i in range(0, len(jobs), cards_per_row):
@@ -122,7 +161,21 @@ def create_card_rows(jobs, cards_per_row=4):
 def initRunSection():
     return "No Jobs Were Selected"
 
+
+# creates the list with checkboxes on the pop-up window 
 def listOfJobsW(jobs, filter_text=""):
+
+    """
+    Creates a list with checkboxes for each job.
+
+    Args:
+    jobs (list): A list of job dictionaries.
+    filter_text (str): Text to filter jobs by name.
+
+    Returns:
+    list: A list of dbc.Row objects, each containing a checkbox for a job.
+    """
+
     filtered_jobs = [job for job in jobs if filter_text.lower() in job.get('settings', {}).get('name', f"Job ID: {job['job_id']}").lower()]
     rows = []
     for job in filtered_jobs:
@@ -131,10 +184,11 @@ def listOfJobsW(jobs, filter_text=""):
             id={"type": "dynamic-checkbox", "index": job['job_id']},
             className="form-check-input",
             label=job_name,
-            persistence=True
+            persistence=True,
+            value = job['job_id']
         )
         row = dbc.Row(
-            dbc.Col(html.P(checkbox, className="form-check"), width=6),
+            dbc.Col(html.P(checkbox, className="form-check")),
             className="mb-2",  # Add margin for spacing between rows
             style = {"margin-top": "10px"}
         )
@@ -145,20 +199,23 @@ def listOfJobsW(jobs, filter_text=""):
 # App layout
 app.layout = html.Div([
     html.H1('Job Details and Runs'),
-    html.Div(id='job-cards', children=create_card_rows(jobs)),
+    html.Div(id='job-cards'),
     dcc.Interval(
         id='interval-component',
-        interval= 60*5*1000,  # in milliseconds so 5 minutes
+        interval= 10*1*1000,  # in milliseconds so 5 minutes
         n_intervals=0
     ),
     dbc.Button("Configure", id= 'configure-button', n_clicks=0, className="buttonC"),
     html.Div(id='button-click-output', children = initRunSection()),
-     dbc.Modal(
+    dcc.Store(id='checkbox-states', storage_type='local'),
+    dcc.Store(id = 'jobs', storage_type='local', data = list_jobs()),
+    dcc.Store(id = 'selected_jobs', storage_type='local'),
+    dbc.Modal(
             [
                 dbc.ModalHeader("Jobs to Display", style = {'font-size': '25px'}),
                 dbc.ModalBody([
                    dbc.Input(id="job-search-bar", placeholder="Search jobs...", type="text"),
-                   html.Div(id="job-list-container", children=listOfJobsW(jobs)),
+                   dbc.Col(html.Div(id="job-list-container"))
                  ]),
                 dbc.ModalFooter(
                     dbc.Button("Apply and Close the Window", id="close", className="buttonConfClose")
@@ -168,8 +225,20 @@ app.layout = html.Div([
         )
 ])
 
-
+# creates the list that appears after the user clicks a show all runs button
 def create_run_list(runs, job_name):
+
+    """
+    Creates a list of job runs for display.
+
+    Args:
+    runs (list): A list of runs to display.
+    job_name (str): The name of the job associated with the runs.
+
+    Returns:
+    list: A list of dbc.Row objects, each representing a job run.
+    """
+
     list_rows = []
     for run in runs:
         # Convert start_time to readable format
@@ -209,10 +278,11 @@ def create_run_list(runs, job_name):
     Output('button-click-output', 'children'),
     [Input({'type': 'show-all-runs-button', 'index': dash.ALL}, 'n_clicks'),
      Input('interval-component', 'n_intervals')],
-    [State({'type': 'show-all-runs-button', 'index': dash.ALL}, 'n_clicks')],
+    [State({'type': 'show-all-runs-button', 'index': dash.ALL}, 'n_clicks'),
+     State('selected_jobs', 'data')]
 )
 
-def display_click(button_clicks, n_intervals, button_states):
+def display_click(button_clicks, n_intervals, button_states, selected_jobs):
     ctx = dash.callback_context
     # Determine what triggered the callback
     if ctx.triggered and ctx.triggered[0]['prop_id'].split('.')[0] != 'interval-component':
@@ -220,9 +290,9 @@ def display_click(button_clicks, n_intervals, button_states):
         index = json.loads(button_id)['index']
         # Ensure the button was actually clicked
         if button_states[index] > 0:
-            job_id = jobs[index]['job_id']
+            job_id = selected_jobs[index]['job_id']
             runs = jobRuns(job_id)
-            job_name = jobs[index].get('settings', {}).get('name', f"Job ID: {jobs[index]['job_id']}")
+            job_name = selected_jobs[index].get('settings', {}).get('name', f"Job ID: {selected_jobs[index]['job_id']}")
 
 
             output_layout = [html.Div([
@@ -245,40 +315,85 @@ def display_click(button_clicks, n_intervals, button_states):
        
     
     
-# Callback to update cards every 5 minutes
+# Callback to update cards every 5 minutes and each time the selection is changed
 @app.callback(
-    Output('job-cards', 'children'),
-    Input('interval-component', 'n_intervals'),
-    prevent_initial_call=True
+    [Output('job-cards', 'children'),
+    Output('selected_jobs', 'data'),
+    Output('jobs','data')],
+    [Input('interval-component', 'n_intervals'),
+     Input('checkbox-states', 'data')],
+     State('jobs', 'data'),
 )
 
 # upgrade cards
-def update_cards(n):
-    jobs = list_jobs()
-    return create_card_rows(jobs)
+def update_cards(n, checkbox_states, jobs):
 
+    if n:
+       jobs = list_jobs() #jobs are re-fetched from dataricks every 5 minutes
+
+
+     #Filter the jobs based on the checkbox states
+    if checkbox_states is None: # if the list is not initialized display all
+          selected_jobss = jobs
+    else:
+          selected_jobss = [job for job in jobs if checkbox_states.get(str(job['job_id']))]
+          if selected_jobss == []: #if none are selected display all
+              selected_jobss = jobs
+    return create_card_rows(selected_jobss), selected_jobss, jobs
+
+
+
+
+
+#window opener
 @app.callback(
     Output("configure-window", "is_open"),
     [Input("configure-button", "n_clicks"), Input("close", "n_clicks")],
     [State("configure-window", "is_open")],
 )
+
+
 def toggle_modal(n1, n2, is_open):
     if n1 or n2:
         return not is_open
     return is_open
 
+#updates the storage that hold which jobs were selected on the pop-up window. Only called after the button on the window is clicked
+@app.callback(
+    Output('checkbox-states', 'data'),
+    Input("close", "n_clicks"),
+    [State('jobs', 'data'),
+     State({'type': 'dynamic-checkbox', 'index': dash.ALL}, 'value'),
+     State('checkbox-states', 'data')],
+    prevent_initial_call=True
+)
+
+def update_checkbox_states(close_clicks, jobs, checked_states, stored_data):
+    if close_clicks:
+        updated_data = {}
+        for idx, checked in enumerate(checked_states):
+            if idx < len(jobs):
+             job_id = jobs[idx]['job_id']
+             updated_data[str(job_id)] = checked
+        return updated_data
+    else:
+        return dash.no_update
+    
+
+# Search function. Also upgrades the list on the pop-up window each time jobs are refreshed. 
 @app.callback(
     Output("job-list-container", "children"),
-    Input("job-search-bar", "value")
+    [Input("job-search-bar", "value"),
+    Input('jobs', 'data')]
+     
 )
-def update_job_list(search_value):
+def update_job_list(search_value, jobs):
     if not search_value:
         # If the search bar is empty, show all jobs
         return listOfJobsW(jobs)
     else:
         # Filter the jobs based on the search input
         return listOfJobsW(jobs, filter_text=search_value)
-
 
 if __name__ == '__main__':
     app.run_server(debug=False)
