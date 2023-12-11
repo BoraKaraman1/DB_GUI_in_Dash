@@ -5,8 +5,8 @@
 
 .button-click-effect {
     appearance: none;
-    background-color: #3872b4;
-    border: 2px solid #285486;
+    background-color: rgb(56, 119, 179);
+    border: 2px solid rgb(40, 88, 143);
     border-radius: 6px;
     box-shadow: rgba(27, 31, 35, .1) 0 1px 0;
     box-sizing: border-box;
@@ -33,14 +33,22 @@
   outline: none;
 }
 
+.button-click-effect:hover {
+  box-shadow: none;
+  transform: translateY(0);
+  background-color: rgb(38, 86, 131) !important;
+  border: 2px solid rgb(24, 59, 100) !important;
+}
+
 .button-click-effect:active {
   box-shadow: none;
   transform: translateY(0);
-  background-color: #412c97 !important;
+  background-color: rgb(17, 47, 75) !important;
+  border: 2px solid rgb(12, 36, 63) !important;
 }
 
 .button-click-effect:focus {
-  box-shadow: #45309975 0 0 0 3px !important;
+  box-shadow: rgb(17, 47, 75) 0 0 0 3px !important;
   outline: none !important;
 }
 
@@ -78,14 +86,17 @@
 }
 
 .buttonConfClose:hover {
-  box-shadow: rgba(0, 0, 0, 0.25) 0 8px 15px;
+  box-shadow: rgba(0, 0, 0, 0.25) 0 8px 15px !important;
   transform: translateY(-2px);
+  background-color: rgb(27, 20, 66) !important;
+  border: 2px solid rgb(44, 20, 66) !important;
 }
 
 .buttonConfClose:active {
   box-shadow: none;
   transform: translateY(0);
-  background-color: #412c97 !important;
+  background-color: rgb(60, 44, 150) !important;
+  border: 2px solid rgb(89, 44, 150) !important;
 }
 
 /* The configure button */
@@ -127,14 +138,17 @@
 }
 
 .buttonC:hover {
-  box-shadow: rgba(0, 0, 0, 0.25) 0 8px 15px;
+  box-shadow: rgba(0, 0, 0, 0.25) 0 8px 15px !important;
   transform: translateY(-2px);
+  background-color: rgb(27, 20, 66) !important;
+  border: 2px solid rgb(44, 20, 66) !important;
 }
 
 .buttonC:active {
   box-shadow: none;
   transform: translateY(0);
-  background-color: #412c97 !important;
+  background-color: rgb(60, 44, 150) !important;
+  border: 2px solid rgb(89, 44, 150) !important;
 }
 
 /* The refresh button */
@@ -176,12 +190,15 @@
 }
 
 .buttonR:hover {
-  box-shadow: rgba(0, 0, 0, 0.25) 0 8px 15px;
+  box-shadow: rgba(0, 0, 0, 0.25) 0 8px 15px !important;
   transform: translateY(-2px);
+  background-color: rgb(27, 20, 66) !important;
+  border: 2px solid rgb(44, 20, 66) !important;
 }
 
 .buttonR:active {
   box-shadow: none;
   transform: translateY(0);
-  background-color: #412c97 !important;
+  background-color: rgb(60, 44, 150) !important;
+  border: 2px solid rgb(89, 44, 150) !important;
 }
