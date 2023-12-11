@@ -68,6 +68,35 @@ def list_jobs():
         print(f"Failed to list jobs: {response.status_code} - {response.text}")
 
 
+def calc_running_job_dur(start_time):
+
+    """
+    Calculate the duration of a running job based on its start time.
+
+    Args:
+    start_time (int): The start time of the job in epoch milliseconds.
+
+    Returns:
+    int: The duration of the job in whole seconds, or None if start_time is not provided.
+    """
+
+    if start_time:
+        # Convert start_time from epoch milliseconds to a datetime object
+        start_time = datetime.fromtimestamp(start_time / 1000)
+
+        # Get the current time
+        current_time = datetime.now()
+
+        # Calculate the duration
+        duration = current_time - start_time
+
+        # Duration in seconds
+        duration_in_seconds = int(duration.total_seconds())
+
+        return duration_in_seconds  
+    else:
+        return None
+
 # Fetches only the last run of a job. Greatly accelerates the initialization
 def lastRun(job_id):
 
@@ -98,12 +127,15 @@ def lastRun(job_id):
             run['formatted_duration'] = str(duration_ms // 1000) + ' seconds' if duration_ms else 'N/A'  # Convert ms to seconds
             # Include result state
             run['result_state'] = run.get('state', {}).get('result_state', 'N/A')
+            # Include life cycle state
+            run['lifecycle_state'] = run.get('state', {}).get('life_cycle_state', 'N/A')
 
-            #the duration is displated as 0 unless the job is complete
-            if run['result_state'] == 'N/A': run['formatted_duration'] = str(0) 
+            # The duration is displayed as 0 if the job is pending and if the job is running elapsed time at the moment of refresh is shown
+            if run['result_state'] == 'N/A' and not run['lifecycle_state'] == 'RUNNING': run['formatted_duration'] = str(0) + ' seconds'
+            if run['lifecycle_state'] == 'RUNNING': run['formatted_duration'] = str(calc_running_job_dur(start_time)) + ' seconds'
             
             # aids the next function by assingning a color depending on the result
-            result_color = '#00f600' if run['result_state'] == 'SUCCESS' else 'red' if run['result_state'] == 'FAILED' else 'blue' if run['result_state'] == 'RUNNING' else 'black'
+            result_color = '#32cd32' if run['result_state'] == 'SUCCESS' else 'red' if run['result_state'] == 'FAILED' else '#1e90ff' if run['lifecycle_state'] == 'RUNNING' else 'black'
             run['result_color'] = result_color
 
             return run
@@ -112,7 +144,7 @@ def lastRun(job_id):
 
 
 # Function to create rows of cards
-def create_card_rows(jobs, cards_per_row=4):
+def create_card_rows(jobs, cards_per_row=6):
 
     """
     Creates rows of cards displaying job details.
@@ -137,19 +169,19 @@ def create_card_rows(jobs, cards_per_row=4):
                 dbc.Card(
                     dbc.CardBody([
                         html.H5(job.get('settings', {}).get('name', f"Job ID: {job['job_id']}"), className="card-title",
-                                style={'color': 'black', 'font-size': '30px'}),
-                        html.P("Last Run's Details:", style={'color': 'black', 'font-size': '20px'}),
-                        html.P(f"Last Run ID: {last_run_details[job['job_id']].get('run_id', 'N/A') if last_run_details[job['job_id']] else 'N/A'}"),
-                        html.P(f"Last Run Start Time: {last_run_details[job['job_id']].get('formatted_start_time', 'N/A') if last_run_details[job['job_id']] else 'N/A'}"),
-                        html.P(f"Duration: {last_run_details[job['job_id']].get('formatted_duration', 'N/A') if last_run_details[job['job_id']] else 'N/A'}"),
-                        html.P(f"State: {last_run_details[job['job_id']].get('state', {}).get('life_cycle_state', 'N/A') if last_run_details[job['job_id']] else 'N/A'}"),
+                                style={'color': 'black', 'font-size': '25px'}),
+                        html.P("Last Run's Details:", style={'color': 'black', 'font-size': '15px'}),
+                        html.P(f"Last Run ID: {last_run_details[job['job_id']].get('run_id', 'N/A') if last_run_details[job['job_id']] else 'N/A'}", style={'font-size': '11px'}),
+                        html.P(f"Last Run Start Time: {last_run_details[job['job_id']].get('formatted_start_time', 'N/A') if last_run_details[job['job_id']] else 'N/A'}", style={'font-size': '11px'}),
+                        html.P(f"Duration: {last_run_details[job['job_id']].get('formatted_duration', 'N/A') if last_run_details[job['job_id']] else 'N/A'}", style={'font-size': '11px'}),
+                        html.P(f"State: {last_run_details[job['job_id']].get('lifecycle_state', 'N/A') if last_run_details[job['job_id']] else 'N/A'}", style={'font-size': '11px'}),
                         html.P(f"Result: {last_run_details[job['job_id']].get('result_state', 'N/A') if last_run_details[job['job_id']] else 'N/A'}", 
-                               style= {'color': last_run_details[job['job_id']].get('result_color', 'N/A') if last_run_details[job['job_id']] else 'N/A'}),
+                               style= {'color': last_run_details[job['job_id']].get('result_color', 'N/A') if last_run_details[job['job_id']] else 'black', 'font-size': '11px', 'font-weight': 'bold'}),
                         dbc.Button("Show All Runs", id={'type': 'show-all-runs-button', 'index': idx}, n_clicks=0, className="button-click-effect")
                     ]),
-                    style={"width": "18rem", "margin": "15px", 
-                           "border": "4px solid",
-                           "border-color": last_run_details[job['job_id']].get('result_color', 'N/A') if last_run_details[job['job_id']] else 'N/A'}
+                    style={"width": "14rem", "margin": "12px", 
+                           "border": "3px solid",
+                           "border-color": last_run_details[job['job_id']].get('result_color', 'N/A') if last_run_details[job['job_id']] else 'black'}
                 )
             ) for idx, job in enumerate(row_jobs, start=i)],
             className="mb-4"
@@ -256,10 +288,13 @@ def create_run_list(runs, job_name):
 
         # Determine color for result state
         result_state = run.get('state', {}).get('result_state', 'N/A')
-        result_color = 'green' if result_state == 'SUCCESS' else 'red' if result_state == 'FAILED' else 'blue' if result_state == 'RUNNING' else 'black'
+        lifecycle_state = run.get('state', {}).get('life_cycle_state', 'N/A')
+        result_color = '#32cd32' if result_state == 'SUCCESS' else 'red' if result_state == 'FAILED' else '#1e90ff' if lifecycle_state == 'RUNNING' else 'black'
+
         
-        # If the job is pending its duration is set to zero
-        if result_state == 'N/A': duration = str(0) 
+        # The duration is displayed as 0 if the job is pending and if the job is running elapsed time at the moment of refresh is shown
+        if result_state == 'N/A' and not lifecycle_state == 'RUNNING': duration = str(0) + ' seconds'
+        if lifecycle_state == 'RUNNING': duration = str(calc_running_job_dur(start_time)) + ' seconds'
 
         # Create a row for each run with border and colored result state
         row = dbc.Row([
@@ -267,7 +302,7 @@ def create_run_list(runs, job_name):
             dbc.Col(html.P(str(run.get('run_id', 'N/A'))), style={'border': '1px solid black', 'font-size': '15px'}, width=2),
             dbc.Col(html.P(start_timeR), style={'border': '1px solid black', 'font-size': '15px'}, width=2),
             dbc.Col(html.P(duration), style={'border': '1px solid black', 'font-size': '15px'}, width=1),
-            dbc.Col(html.P(run.get('state', {}).get('life_cycle_state', 'N/A')), style={'border': '1px solid black', 'font-size': '15px'}, width=2),
+            dbc.Col(html.P(lifecycle_state), style={'border': '1px solid black', 'font-size': '15px'}, width=2),
             dbc.Col(html.P(result_state, style={'color': result_color}), style={'border': '1px solid black', 'font-size': '15px'}, width=3),
         ], className="mb-2")
         list_rows.append(row)
