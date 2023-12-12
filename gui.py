@@ -58,7 +58,7 @@ def list_jobs():
     Returns:
     list: A list of jobs, or None if the request fails.
     """
-      
+    print("CALLED")
     response = requests.get(job_url, headers=headers)
     if response.status_code == 200:
         # Parse the job list
@@ -139,7 +139,7 @@ def lastRun(job_id):
             result_color = '#008f00' if run['result_state'] == 'SUCCESS' else 'red' if run['result_state'] == 'FAILED' else '#1e90ff' if run['lifecycle_state'] == 'RUNNING' else 'red' if run['result_state'] == "MAXIMUM_CONCURRENT_RUNS_REACHED" else 'gray'
             run['result_color'] = result_color
 
-            # Depending on the specific lifecycle and result states, determines which of the attribures will be displayed in bold
+            # Depending on the specific lifecycle and result states, determines which of the attributes will be displayed in bold
             if run['lifecycle_state'] == 'RUNNING' or run['lifecycle_state'] == 'PENDING':
                 run['lifecycleFont'] = 'bold'
                 run['resultFont'] = 'normal'
@@ -251,6 +251,7 @@ def listOfJobsW(jobs, filter_text=""):
 
 # App layout
 app.layout = html.Div([
+    dcc.Location(id='url', refresh=False),
     html.H1(html.Span('Job Details and Runs', style={'margin-left': '10px'}), 
             style = {"color" : "#f0f0f0", "backgroundColor" : "#2b2b2b", "padding-bottom": "11px"}),
     html.Div(id='job-cards'),
@@ -263,7 +264,7 @@ app.layout = html.Div([
     dbc.Button(html.Img(src="/assets/refresh.png", style={'height':'30px', 'width':'30px'}), id= 'refresh-button', n_clicks=0, className="buttonR"),
     html.Div(id='button-click-output', children = initRunSection()),
     dcc.Store(id='checkbox-states', storage_type='local'),
-    dcc.Store(id = 'jobs', storage_type='local', data = list_jobs()),
+    dcc.Store(id = 'jobs', storage_type='local'),
     dcc.Store(id = 'selected_jobs', storage_type='local'),
     dbc.Modal(
             [
@@ -384,15 +385,17 @@ def display_click(button_clicks, n_intervals, button_states, selected_jobs):
     Output('jobs','data')],
     [Input('interval-component', 'n_intervals'),
     Input('checkbox-states', 'data'),
-    Input("refresh-button", "n_clicks")],
+    Input("refresh-button", "n_clicks"),
+    Input('url', 'pathname')],
     State('jobs', 'data'),
 )
 
 # upgrade cards
-def update_cards(n, checkbox_states, refreshB, jobs):
+def update_cards(n, checkbox_states, refreshB, url, jobs):
 
-    if refreshB:
-       jobs = list_jobs() #jobs are refetched from databricks every 5 minutes or when the refresh is pressed
+    if refreshB or (url and not checkbox_states):
+       print(url)
+       jobs = list_jobs() #jobs are refetched when the refresh is pressed
 
 
      #Filter the jobs based on the checkbox states
