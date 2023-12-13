@@ -133,7 +133,7 @@ def lastRun(job_id):
 
             # The duration is displayed as 0 if the job is pending and if the job is running elapsed time at the moment of refresh is shown
             
-            if run['lifecycle_state'] == 'RUNNING': run['formatted_duration'] = calc_running_job_dur(start_time)
+            if run['lifecycle_state'] == 'RUNNING' or run['lifecycle_state'] == 'PENDING': run['formatted_duration'] = calc_running_job_dur(start_time)
 
             if run['formatted_duration'] == 1:
               run['formatted_duration'] = str(run['formatted_duration']) + ' second' if duration_ms else 'N/A'  # Convert ms to seconds
@@ -141,10 +141,9 @@ def lastRun(job_id):
             else:
               run['formatted_duration'] = str(run['formatted_duration']) + ' seconds' if duration_ms else 'N/A'  # Convert ms to seconds
 
-            if run['result_state'] == 'N/A' and not run['lifecycle_state'] == 'RUNNING': run['formatted_duration'] = str(0) + ' seconds'
             
             # aids the next function by assingning a color depending on the result
-            result_color = '#008f00' if run['result_state'] == 'SUCCESS' else 'red' if run['result_state'] == 'FAILED' else '#1e90ff' if run['lifecycle_state'] == 'RUNNING' \
+            result_color = '#008f00' if run['result_state'] == 'SUCCESS' else 'red' if run['result_state'] == 'FAILED' else '#ed9a00' if run['lifecycle_state'] == 'RUNNING' \
              else 'red' if run['result_state'] == "MAXIMUM_CONCURRENT_RUNS_REACHED" else 'gray'
             
             run['result_color'] = result_color
@@ -188,20 +187,22 @@ def create_card_rows(jobs, cards_per_row=99):
             [dbc.Card(
                     dbc.CardBody([
                         html.H5(job.get('settings', {}).get('name', f"Job ID: {job['job_id']}"), className="card-title",
-                                style={'color': last_run_details[job['job_id']].get('result_color', 'N/A') if last_run_details[job['job_id']] else 'black',
-                                      'font-size': '25px'}),       
+                                style={'color': last_run_details[job['job_id']].get('result_color', 'N/A') if last_run_details[job['job_id']] else 'gray',
+                                      'font-size': '25px', 'margin-bottom' : '18px', 'text-align' : 'center'}),       
                         
                         html.P(f"State: {last_run_details[job['job_id']].get('lifecycle_state', 'N/A') if last_run_details[job['job_id']] else 'N/A'}", 
-                               style= {'color': last_run_details[job['job_id']].get('result_color', 'N/A') if last_run_details[job['job_id']] else 'black',
+                               style= {'color': last_run_details[job['job_id']].get('result_color', 'N/A') if last_run_details[job['job_id']] else 'gray',
                                         'font-size': '16px',
                                         'font-weight': last_run_details[job['job_id']].get('lifecycleFont', 'N/A') if last_run_details[job['job_id']] else 'normal'}),
                         
                         html.P(f"Result: {last_run_details[job['job_id']].get('result_state', 'N/A') if last_run_details[job['job_id']] else 'N/A'}", 
-                               style= {'color': last_run_details[job['job_id']].get('result_color', 'N/A') if last_run_details[job['job_id']] else 'black',
+                               style= {'color': last_run_details[job['job_id']].get('result_color', 'N/A') if last_run_details[job['job_id']] else 'gray',
                                         'font-size': '16px',
                                         'font-weight': last_run_details[job['job_id']].get('resultFont', 'N/A') if last_run_details[job['job_id']] else 'bold'}),
 
-                        html.P(f"Last Run Start Time: {last_run_details[job['job_id']].get('formatted_start_time', 'N/A') if last_run_details[job['job_id']] else 'N/A'}", style={'font-size': '11px'}),
+                        html.P(f"Last Run Start Time: {last_run_details[job['job_id']].get('formatted_start_time', 'N/A') if last_run_details[job['job_id']] else 'N/A'}", 
+                               style={'font-size': '11px'}),
+
                         html.P(f"Duration: {last_run_details[job['job_id']].get('formatted_duration', 'N/A') if last_run_details[job['job_id']] else 'N/A'}", style={'font-size': '11px'}),
                         dbc.Button("Show All Runs", id={'type': 'show-all-runs-button', 'index': idx}, n_clicks=0, className="button-click-effect")
 
@@ -212,7 +213,7 @@ def create_card_rows(jobs, cards_per_row=99):
                            "margin-left": "1.2rem",
                            "margin-bottom": "1rem",
                            "border": "3px solid",
-                           "border-color": last_run_details[job['job_id']].get('result_color', 'N/A') if last_run_details[job['job_id']] else 'black',
+                           "border-color": last_run_details[job['job_id']].get('result_color', 'N/A') if last_run_details[job['job_id']] else 'gray',
                            "backgroundColor" : "#f0f0f0",
                            "position" : "relative"}
                 ) for idx, job in enumerate(row_jobs, start=i)]
@@ -263,7 +264,7 @@ isRorL = 0
 # App layout
 app.layout = html.Div([
     html.H1(html.Span('Job Details and Runs', style={'margin-left': '10px'}), 
-            style = {"color" : "#f0f0f0", "backgroundColor" : "#2b2b2b", "padding-bottom": "11px"}),
+            style = {"color" : "#f0f0f0", "backgroundColor" : "#5c5c5c", "padding-bottom": "11px"}),
     html.Div(id='job-cards'),
     dcc.Interval(
         id='interval-component',
@@ -271,8 +272,8 @@ app.layout = html.Div([
         n_intervals=0,
         disabled= True
     ),
-    dbc.Button(html.Img(src="/assets/configure.png", style={'height':'30px', 'width':'30px'}), id= 'configure-button', n_clicks=0, className="buttonC"),
-    dbc.Button(html.Img(src="/assets/refresh.png", style={'height':'30px', 'width':'30px'}), id= 'refresh-button', n_clicks=0, className="buttonR"),
+    dbc.Button(html.Img(src="/assets/configure.png", style={'height':'27px', 'width':'27px'}), id= 'configure-button', n_clicks=0, className="buttonC"),
+    dbc.Button(html.Img(src="/assets/refresh.png", style={'height':'27px', 'width':'27px'}), id= 'refresh-button', n_clicks=0, className="buttonR"),
     html.Div(id='button-click-output', children = initRunSection()),
     dcc.Store(id='checkbox-states', storage_type='local'),
     dcc.Store(id = 'jobs', storage_type= 'local'),
@@ -331,12 +332,12 @@ def create_run_list(runs, job_name):
 
         if result_state == 'MAXIMUM_CONCURRENT_RUNS_REACHED': result_state = 'MAX_CONC_RUNS'
         result_color = '#008f00' if result_state == 'SUCCESS' else 'red' if result_state == 'FAILED' else 'red' if result_state == 'MAX_CONC_RUNS' else 'black'
-        lifecycle_color = '#1e90ff' if lifecycle_state == 'RUNNING' else 'black'
+        lifecycle_color = '#ed9a00' if lifecycle_state == 'RUNNING' else 'black'
 
         
         # The duration is displayed as 0 if the job is pending and if the job is running elapsed time at the moment of refresh is shown
         
-        if lifecycle_state == 'RUNNING': duration = calc_running_job_dur(start_time) 
+        if lifecycle_state == 'RUNNING' or lifecycle_state == 'PENDING' :  duration = calc_running_job_dur(start_time) 
 
         if duration == 1:
           duration = str(duration) + ' second' if duration_ms else 'N/A'  # Convert ms to seconds
@@ -344,21 +345,19 @@ def create_run_list(runs, job_name):
         else:
           duration = str(duration) + ' seconds' if duration_ms else 'N/A'  # Convert ms to seconds
 
-        if result_state == 'N/A' and lifecycle_state != 'RUNNING': duration = str(0) + ' seconds'
-
         
         # Url is readied here for better readability of the code 
         linkRP = run.get('run_page_url', 'N/A')
 
         # Create a row for each run with border and colored result state
         row = dbc.Row([
-            dbc.Col(html.P(job_name), style={'border': '1px solid black', 'font-size': '15px', "margin-left": "20px"}, width=1),
-            dbc.Col(html.P(str(run.get('run_id', 'N/A'))), style={'border': '1px solid black', 'font-size': '15px'}, width=2),
-            dbc.Col(html.P(start_timeR), style={'border': '1px solid black', 'font-size': '15px'}, width=2),
-            dbc.Col(html.P(duration), style={'border': '1px solid black', 'font-size': '15px'}, width=1),
-            dbc.Col(html.P(lifecycle_state), style={'border': '1px solid black', 'font-size': '15px', 'color': lifecycle_color}, width=1),
-            dbc.Col(html.P(result_state, style={'color': result_color}), style={'border': '1px solid black', 'font-size': '15px'}, width=1),
-            dbc.Col(html.P(html.A(linkRP ,href = linkRP)), style={'border': '1px solid black', 'font-size': '15px'}, width=3)
+            dbc.Col(html.P(job_name), style={'border': '1px solid gray', 'font-size': '13px', "margin-left": "20px"}, width=1),
+            dbc.Col(html.P(str(run.get('run_id', 'N/A'))), style={'border': '1px solid gray', 'font-size': '13px'}, width=2),
+            dbc.Col(html.P(start_timeR), style={'border': '1px solid gray', 'font-size': '13px'}, width=2),
+            dbc.Col(html.P(duration), style={'border': '1px solid gray', 'font-size': '13px'}, width=1),
+            dbc.Col(html.P(lifecycle_state), style={'border': '1px solid gray', 'font-size': '13px', 'color': lifecycle_color}, width=1),
+            dbc.Col(html.P(result_state, style={'color': result_color}), style={'border': '1px solid gray', 'font-size': '13px'}, width=1),
+            dbc.Col(html.P(html.A(f"Go to page" ,href = linkRP)), style={'border': '1px solid gray', 'font-size': '13px'}, width=2)
         ])
         list_rows.append(row)
     return list_rows
@@ -389,13 +388,13 @@ def display_click(button_clicks, n_intervals, button_states, selected_jobs):
              html.P(f"Runs for the Job: {job_name}", 
                    style={'color': 'black', 'font-size': '35px', 'margin-left': "10px"}),
              dbc.Row([
-               dbc.Col(html.P(f"Job Name"), style={'border': '1px solid black', 'font-weight': 'bold', 'font-size': '15px', "margin-left": "20px"}, width=1),
-               dbc.Col(html.P(f"Run ID"), style={'border': '1px solid black', 'font-weight': 'bold', 'font-size': '15px'}, width=2),
-               dbc.Col(html.P(f"Start Time"), style={'border': '1px solid black', 'font-weight': 'bold', 'font-size': '15px'}, width=2),
-               dbc.Col(html.P(f"Duration"), style={'border': '1px solid black', 'font-weight': 'bold', 'font-size': '15px'}, width=1),
-               dbc.Col(html.P(f"State"), style={'border': '1px solid black', 'font-weight': 'bold', 'font-size': '15px'}, width=1),
-               dbc.Col(html.P((f"Result")), style={'border': '1px solid black', 'font-weight': 'bold', 'font-size': '15px'}, width=1),
-               dbc.Col(html.P((f"Link")), style={'border': '1px solid black', 'font-weight': 'bold', 'font-size': '15px'}, width=3)
+               dbc.Col(html.P(f"Job Name"), style={'font-weight': 'bold', 'font-size': '15px', "margin-left": "20px"}, width=1),
+               dbc.Col(html.P(f"Run ID"), style={'font-weight': 'bold', 'font-size': '15px'}, width=2),
+               dbc.Col(html.P(f"Start Time"), style={'font-weight': 'bold', 'font-size': '15px'}, width=2),
+               dbc.Col(html.P(f"Duration"), style={'font-weight': 'bold', 'font-size': '15px'}, width=1),
+               dbc.Col(html.P(f"State"), style={'font-weight': 'bold', 'font-size': '15px'}, width=1),
+               dbc.Col(html.P((f"Result")), style={'font-weight': 'bold', 'font-size': '15px'}, width=1),
+               dbc.Col(html.P((f"Link")), style={'font-weight': 'bold', 'font-size': '15px'}, width=2)
                ]),
              html.Div(create_run_list(runs, job_name), style={"margin-top": "16px"})
               ])]
