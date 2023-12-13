@@ -58,7 +58,6 @@ def list_jobs():
     Returns:
     list: A list of jobs, or None if the request fails.
     """
-    print("CALLED")
     response = requests.get(job_url, headers=headers)
     if response.status_code == 200:
         # Parse the job list
@@ -125,18 +124,29 @@ def lastRun(job_id):
             # Format start time
             run['formatted_start_time'] = datetime.fromtimestamp(start_time / 1000).strftime('%Y-%m-%d %H:%M:%S') if start_time else 'N/A'
             # Format duration
-            run['formatted_duration'] = str(duration_ms // 1000) + ' seconds' if duration_ms else 'N/A'  # Convert ms to seconds
+            run['formatted_duration'] = duration_ms // 1000 
+            
             # Include result state
             run['result_state'] = run.get('state', {}).get('result_state', 'N/A')
             # Include life cycle state
             run['lifecycle_state'] = run.get('state', {}).get('life_cycle_state', 'N/A')
 
             # The duration is displayed as 0 if the job is pending and if the job is running elapsed time at the moment of refresh is shown
+            
+            if run['lifecycle_state'] == 'RUNNING': run['formatted_duration'] = calc_running_job_dur(start_time)
+
+            if run['formatted_duration'] == 1:
+              run['formatted_duration'] = str(run['formatted_duration']) + ' second' if duration_ms else 'N/A'  # Convert ms to seconds
+
+            else:
+              run['formatted_duration'] = str(run['formatted_duration']) + ' seconds' if duration_ms else 'N/A'  # Convert ms to seconds
+
             if run['result_state'] == 'N/A' and not run['lifecycle_state'] == 'RUNNING': run['formatted_duration'] = str(0) + ' seconds'
-            if run['lifecycle_state'] == 'RUNNING': run['formatted_duration'] = str(calc_running_job_dur(start_time)) + ' seconds'
             
             # aids the next function by assingning a color depending on the result
-            result_color = '#008f00' if run['result_state'] == 'SUCCESS' else 'red' if run['result_state'] == 'FAILED' else '#1e90ff' if run['lifecycle_state'] == 'RUNNING' else 'red' if run['result_state'] == "MAXIMUM_CONCURRENT_RUNS_REACHED" else 'gray'
+            result_color = '#008f00' if run['result_state'] == 'SUCCESS' else 'red' if run['result_state'] == 'FAILED' else '#1e90ff' if run['lifecycle_state'] == 'RUNNING' \
+             else 'red' if run['result_state'] == "MAXIMUM_CONCURRENT_RUNS_REACHED" else 'gray'
+            
             run['result_color'] = result_color
 
             # Depending on the specific lifecycle and result states, determines which of the attributes will be displayed in bold
@@ -248,24 +258,26 @@ def listOfJobsW(jobs, filter_text=""):
         rows.append(row)
     return rows
 
+isRorL = 0
 
 # App layout
 app.layout = html.Div([
-    dcc.Location(id='url', refresh=False),
     html.H1(html.Span('Job Details and Runs', style={'margin-left': '10px'}), 
             style = {"color" : "#f0f0f0", "backgroundColor" : "#2b2b2b", "padding-bottom": "11px"}),
     html.Div(id='job-cards'),
     dcc.Interval(
         id='interval-component',
         interval= 9999999999999,
-        n_intervals=0
+        n_intervals=0,
+        disabled= True
     ),
     dbc.Button(html.Img(src="/assets/configure.png", style={'height':'30px', 'width':'30px'}), id= 'configure-button', n_clicks=0, className="buttonC"),
     dbc.Button(html.Img(src="/assets/refresh.png", style={'height':'30px', 'width':'30px'}), id= 'refresh-button', n_clicks=0, className="buttonR"),
     html.Div(id='button-click-output', children = initRunSection()),
     dcc.Store(id='checkbox-states', storage_type='local'),
-    dcc.Store(id = 'jobs', storage_type='local'),
+    dcc.Store(id = 'jobs', storage_type= 'local'),
     dcc.Store(id = 'selected_jobs', storage_type='local'),
+    dcc.Store(id = 'isRorL', storage_type='memory', data = isRorL),
     dbc.Modal(
             [
                 dbc.ModalHeader(html.H4("Jobs to Display", style={'font-size': '25px', 'color': '#f0f0f0'}),
@@ -310,19 +322,33 @@ def create_run_list(runs, job_name):
         # Calculate run duration
         end_time = run.get('end_time')  
         duration_ms = end_time - start_time
-        duration = str(duration_ms // 1000) + ' seconds' if duration_ms else 'N/A'
-
+        
+        duration = duration_ms // 1000 
+            
         # Determine color for result state
         result_state = run.get('state', {}).get('result_state', 'N/A')
         lifecycle_state = run.get('state', {}).get('life_cycle_state', 'N/A')
-        result_color = '#008f00' if result_state == 'SUCCESS' else 'red' if result_state == 'FAILED' else 'red' if result_state == 'MAXIMUM_CONCURRENT_RUNS_REACHED' else 'black'
+
+        if result_state == 'MAXIMUM_CONCURRENT_RUNS_REACHED': result_state = 'MAX_CONC_RUNS'
+        result_color = '#008f00' if result_state == 'SUCCESS' else 'red' if result_state == 'FAILED' else 'red' if result_state == 'MAX_CONC_RUNS' else 'black'
         lifecycle_color = '#1e90ff' if lifecycle_state == 'RUNNING' else 'black'
 
         
         # The duration is displayed as 0 if the job is pending and if the job is running elapsed time at the moment of refresh is shown
-        if result_state == 'N/A' and not lifecycle_state == 'RUNNING': duration = str(0) + ' seconds'
-        if lifecycle_state == 'RUNNING': duration = str(calc_running_job_dur(start_time)) + ' seconds'
+        
+        if lifecycle_state == 'RUNNING': duration = calc_running_job_dur(start_time) 
 
+        if duration == 1:
+          duration = str(duration) + ' second' if duration_ms else 'N/A'  # Convert ms to seconds
+
+        else:
+          duration = str(duration) + ' seconds' if duration_ms else 'N/A'  # Convert ms to seconds
+
+        if result_state == 'N/A' and lifecycle_state != 'RUNNING': duration = str(0) + ' seconds'
+
+        
+        # Url is readied here for better readability of the code 
+        linkRP = run.get('run_page_url', 'N/A')
 
         # Create a row for each run with border and colored result state
         row = dbc.Row([
@@ -330,8 +356,9 @@ def create_run_list(runs, job_name):
             dbc.Col(html.P(str(run.get('run_id', 'N/A'))), style={'border': '1px solid black', 'font-size': '15px'}, width=2),
             dbc.Col(html.P(start_timeR), style={'border': '1px solid black', 'font-size': '15px'}, width=2),
             dbc.Col(html.P(duration), style={'border': '1px solid black', 'font-size': '15px'}, width=1),
-            dbc.Col(html.P(lifecycle_state), style={'border': '1px solid black', 'font-size': '15px', 'color': lifecycle_color}, width=2),
-            dbc.Col(html.P(result_state, style={'color': result_color}), style={'border': '1px solid black', 'font-size': '15px'}, width=3),
+            dbc.Col(html.P(lifecycle_state), style={'border': '1px solid black', 'font-size': '15px', 'color': lifecycle_color}, width=1),
+            dbc.Col(html.P(result_state, style={'color': result_color}), style={'border': '1px solid black', 'font-size': '15px'}, width=1),
+            dbc.Col(html.P(html.A(linkRP ,href = linkRP)), style={'border': '1px solid black', 'font-size': '15px'}, width=3)
         ])
         list_rows.append(row)
     return list_rows
@@ -366,8 +393,9 @@ def display_click(button_clicks, n_intervals, button_states, selected_jobs):
                dbc.Col(html.P(f"Run ID"), style={'border': '1px solid black', 'font-weight': 'bold', 'font-size': '15px'}, width=2),
                dbc.Col(html.P(f"Start Time"), style={'border': '1px solid black', 'font-weight': 'bold', 'font-size': '15px'}, width=2),
                dbc.Col(html.P(f"Duration"), style={'border': '1px solid black', 'font-weight': 'bold', 'font-size': '15px'}, width=1),
-               dbc.Col(html.P(f"State"), style={'border': '1px solid black', 'font-weight': 'bold', 'font-size': '15px'}, width=2),
-               dbc.Col(html.P((f"Result")), style={'border': '1px solid black', 'font-weight': 'bold', 'font-size': '15px'}, width=3)
+               dbc.Col(html.P(f"State"), style={'border': '1px solid black', 'font-weight': 'bold', 'font-size': '15px'}, width=1),
+               dbc.Col(html.P((f"Result")), style={'border': '1px solid black', 'font-weight': 'bold', 'font-size': '15px'}, width=1),
+               dbc.Col(html.P((f"Link")), style={'border': '1px solid black', 'font-weight': 'bold', 'font-size': '15px'}, width=3)
                ]),
              html.Div(create_run_list(runs, job_name), style={"margin-top": "16px"})
               ])]
@@ -382,30 +410,40 @@ def display_click(button_clicks, n_intervals, button_states, selected_jobs):
 @app.callback(
     [Output('job-cards', 'children'),
     Output('selected_jobs', 'data'),
-    Output('jobs','data')],
+    Output('jobs','data'),
+    Output('isRorL', 'data')],
     [Input('interval-component', 'n_intervals'),
     Input('checkbox-states', 'data'),
-    Input("refresh-button", "n_clicks"),
-    Input('url', 'pathname')],
-    State('jobs', 'data'),
+    Input("refresh-button", "n_clicks")],
+    [State('jobs', 'data'),
+    State('isRorL', 'data')]
 )
 
 # upgrade cards
-def update_cards(n, checkbox_states, refreshB, url, jobs):
+def update_cards(n, checkbox_states, refreshB, jobs, isRorL):
+    
+    context = dash.callback_context
 
-    if refreshB or (url and not checkbox_states):
-       print(url)
-       jobs = list_jobs() #jobs are refetched when the refresh is pressed
+    if not context.triggered:
+        # On initial load
+        jobs = list_jobs()
+    elif context.triggered[0]['prop_id'] == 'checkbox-states.data' and isRorL == 0:
+         #If triggered by page load and refresh. RorL, being stored in memory, is made 0 in every refresh and load. This changes it to 1 so further updates of checboxes don't trigger it.
+        jobs = list_jobs()
+        isRorL = 1
+    elif context.triggered[0]['prop_id'] == 'refresh-button.n_clicks':
+        # If triggered by refresh button
+        jobs = list_jobs()
 
-
+    
      #Filter the jobs based on the checkbox states
     if checkbox_states is None: # if the list is not initialized display all
           selected_jobss = jobs
     else:
           selected_jobss = [job for job in jobs if checkbox_states.get(str(job['job_id']))]
           if selected_jobss == []: #if none are selected display all
-              selected_jobss = jobs
-    return create_card_rows(selected_jobss), selected_jobss, jobs
+              selected_jobss = jobs         
+    return create_card_rows(selected_jobss), selected_jobss, jobs, isRorL
 
 
 
@@ -427,17 +465,17 @@ def toggle_modal(n1, n2, is_open):
     Output('checkbox-states', 'data'),
     Input("close", "n_clicks"),
     [State('jobs', 'data'),
-     State({'type': 'dynamic-checkbox', 'index': dash.ALL}, 'value'),
-     State('checkbox-states', 'data')],
+    State({'type': 'dynamic-checkbox', 'index': dash.ALL}, 'value'),
+    State({'type': 'dynamic-checkbox', 'index': dash.ALL}, 'id')],
     prevent_initial_call=True
 )
 
-def update_checkbox_states(close_clicks, jobs, checked_states, stored_data):
+def update_checkbox_states(close_clicks, jobs, checked_states, indexes):
     if close_clicks:
         updated_data = {}
         for idx, checked in enumerate(checked_states):
             if idx < len(jobs):
-             job_id = jobs[idx]['job_id']
+             job_id = indexes[idx].get('index', 'N/A')
              updated_data[str(job_id)] = checked
         return updated_data
     else:
