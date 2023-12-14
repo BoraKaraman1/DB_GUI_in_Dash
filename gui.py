@@ -303,7 +303,8 @@ app.layout = html.Div([
                 dbc.ModalHeader(html.H4("Jobs to Display", style={'font-size': '25px', 'color': '#ecf0f2'}),
                    style={'backgroundColor': '#5a5c5f'}),
                 dbc.ModalBody([
-                   dbc.Input(id="job-search-bar", placeholder="Search jobs...", type="text"),
+                   dbc.Input(id="job-search-bar", placeholder="Search jobs...", type="text", style={'margin-bottom' : '12px'}),
+                   dbc.Button("See All", id= "SAll", className= "buttonSeeAll"),
                    dbc.Col(html.Div(id="job-list-container"))
                  ], style = {"backgroundColor" : "#ecf0f2"}
                 ),
@@ -532,6 +533,22 @@ def update_job_list(search_value, jobs):
         # Filter the jobs based on the search input
         return listOfJobsW(jobs, filter_text=search_value)
     
+
+# Callback and function for the "Select All" button on the modal
+@app.callback(
+    Output({'type': 'dynamic-checkbox', 'index': dash.ALL}, 'value'),
+    Input("SAll", "n_clicks"),
+    State({'type': 'dynamic-checkbox', 'index': dash.ALL}, 'value'),
+    prevent_initial_call=True
+)
+
+def SelectAll(SAll_clicks, checkboxes):
+    selected_checkboxes = []
+    for idx in range(len(checkboxes)):
+        selected_checkboxes.append(True)
+
+    return selected_checkboxes
+
 
 
 if __name__ == '__main__':
