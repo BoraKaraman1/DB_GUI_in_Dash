@@ -193,23 +193,23 @@
 /* Checkboxes in the modal */
 
 .form-check-input:checked {
-  background-color: #222221 !important;
-  border-color: #222221 !important;
+  background-color: #212222 !important;
+  border-color: #212222 !important;
 }
 
 /* Background Color of the App */
 
 body {
-  background-color: #f0f0f0; 
+  background-color: #ecf0f2; 
 }
 
 /* Customising the table's size, colors, and borders */
 
 .runs-table td,
 .runs-table th {
-    border-right: 1px solid #6e6e6e;  /* Darker border color */
-    border-left: 1px solid #6e6e6e;
-    background-color: rgb(253, 253, 253);
+    border-right: 1px solid #6e6e6f;  /* Darker border color */
+    border-left: 1px solid #6e6e6f;
+    background-color: rgb(251, 253, 253);
     font-size: 14px;
 }
 
