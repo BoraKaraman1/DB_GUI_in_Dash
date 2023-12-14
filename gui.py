@@ -67,7 +67,7 @@ def list_jobs():
         return jobs
            
     else:
-        print(f"Failed to list jobs: {response.status_code} - {response.text}")
+        return None
 
 
 
@@ -230,7 +230,7 @@ def create_card_rows(jobs, cards_per_row=99):
                            "margin-bottom": "1rem",
                            "border": "3px solid",
                            "border-color": last_run_details[job['job_id']].get('result_color', 'N/A') if last_run_details[job['job_id']] else 'gray',
-                           "backgroundColor" : "#f0f0f0",
+                           "backgroundColor" : "#ecf0f2",
                            "position" : "relative"}
                 ) for idx, job in enumerate(row_jobs, start=i)]
             ) 
@@ -283,7 +283,7 @@ isRorL = 0
 # App layout
 app.layout = html.Div([
     html.H1(html.Span('Job Details and Runs', style={'margin-left': '10px'}), 
-            style = {"color" : "#f0f0f0", "backgroundColor" : "#5c5c5c", "padding-bottom": "10px"}),
+            style = {"color" : "#ecf0f2", "backgroundColor" : "#5a5c5f", "padding-bottom": "10px"}),
     html.Div(id='job-cards', style={'margin-top': '10px'}),
     dcc.Interval(
         id='interval-component',
@@ -300,21 +300,21 @@ app.layout = html.Div([
     dcc.Store(id = 'isRorL', storage_type='memory', data = isRorL),
     dbc.Modal(
             [
-                dbc.ModalHeader(html.H4("Jobs to Display", style={'font-size': '25px', 'color': '#f0f0f0'}),
-                   style={'backgroundColor': '#5c5c5c'}),
+                dbc.ModalHeader(html.H4("Jobs to Display", style={'font-size': '25px', 'color': '#ecf0f2'}),
+                   style={'backgroundColor': '#5a5c5f'}),
                 dbc.ModalBody([
                    dbc.Input(id="job-search-bar", placeholder="Search jobs...", type="text"),
                    dbc.Col(html.Div(id="job-list-container"))
-                 ], style = {"backgroundColor" : "#f0f0f0"}
+                 ], style = {"backgroundColor" : "#ecf0f2"}
                 ),
                 dbc.ModalFooter(
                     dbc.Button("Apply", id="close", className="buttonConfClose"),
-                    style = {"backgroundColor" : "#f0f0f0"}
+                    style = {"backgroundColor" : "#ecf0f2"}
                 ),
             ],
             id="configure-window",
         )
-    ], style = {"backgroundColor" : "#f0f0f0"}
+    ], style = {"backgroundColor" : "#ecf0f2"}
 )
 
 
