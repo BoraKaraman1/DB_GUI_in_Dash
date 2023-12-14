@@ -26,6 +26,8 @@ headers = {
 # initialize the app
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
+
+
 # get the runs of a job
 def jobRuns(job_id):
 
@@ -68,6 +70,7 @@ def list_jobs():
         print(f"Failed to list jobs: {response.status_code} - {response.text}")
 
 
+
 def calc_running_job_dur(start_time):
 
     """
@@ -96,6 +99,8 @@ def calc_running_job_dur(start_time):
         return duration_in_seconds  
     else:
         return None
+
+
 
 # Fetches only the last run of a job. Greatly accelerates the initialization
 def lastRun(job_id):
@@ -162,6 +167,7 @@ def lastRun(job_id):
             return None
 
 
+
 # Function to create rows of cards
 def create_card_rows(jobs, cards_per_row=99):
 
@@ -190,24 +196,34 @@ def create_card_rows(jobs, cards_per_row=99):
                                 style={'color': last_run_details[job['job_id']].get('result_color', 'N/A') if last_run_details[job['job_id']] else 'gray',
                                       'font-size': '25px', 'margin-bottom' : '18px', 'text-align' : 'center'}),       
                         
-                        html.P(f"State: {last_run_details[job['job_id']].get('lifecycle_state', 'N/A') if last_run_details[job['job_id']] else 'N/A'}", 
+                        html.P(last_run_details[job['job_id']].get('lifecycle_state', 'N/A') if last_run_details[job['job_id']] else 'N/A', 
                                style= {'color': last_run_details[job['job_id']].get('result_color', 'N/A') if last_run_details[job['job_id']] else 'gray',
-                                        'font-size': '16px',
-                                        'font-weight': last_run_details[job['job_id']].get('lifecycleFont', 'N/A') if last_run_details[job['job_id']] else 'normal'}),
+                                        'font-size': '17px',
+                                        'font-weight': last_run_details[job['job_id']].get('lifecycleFont', 'N/A') if last_run_details[job['job_id']] else 'normal',
+                                        'margin-bottom' : '0px'}),
+
+                        html.P(f"State", style= {'color': 'gray', 'font-size': '10px', 'font-weight': 'normal', 'margin-top': '0px', 'margin-bottom' : '10px'}),                
                         
-                        html.P(f"Result: {last_run_details[job['job_id']].get('result_state', 'N/A') if last_run_details[job['job_id']] else 'N/A'}", 
+                        html.P(last_run_details[job['job_id']].get('result_state', 'N/A') if last_run_details[job['job_id']] else 'N/A', 
                                style= {'color': last_run_details[job['job_id']].get('result_color', 'N/A') if last_run_details[job['job_id']] else 'gray',
-                                        'font-size': '16px',
-                                        'font-weight': last_run_details[job['job_id']].get('resultFont', 'N/A') if last_run_details[job['job_id']] else 'bold'}),
+                                        'font-size': '17px',
+                                        'font-weight': last_run_details[job['job_id']].get('resultFont', 'N/A') if last_run_details[job['job_id']] else 'bold',
+                                        'margin-bottom' : '0px'}),
 
-                        html.P(f"Last Run Start Time: {last_run_details[job['job_id']].get('formatted_start_time', 'N/A') if last_run_details[job['job_id']] else 'N/A'}", 
-                               style={'font-size': '11px'}),
+                        html.P(f"Result", style= {'color': 'gray', 'font-size': '10px', 'font-weight': 'normal', 'margin-top': '0px', 'margin-bottom' : '15px'}),  
 
-                        html.P(f"Duration: {last_run_details[job['job_id']].get('formatted_duration', 'N/A') if last_run_details[job['job_id']] else 'N/A'}", style={'font-size': '11px'}),
+                        html.P(f"Last Run Start Time:", style= {'font-size': '11px', 'margin-bottom' : '0px'}),
+
+                        html.P(last_run_details[job['job_id']].get('formatted_start_time', 'N/A') if last_run_details[job['job_id']] else 'N/A', 
+                               style= {'font-size': '11px', 'margin-top' : '0px'}),
+
+                        html.P(f"Duration: {last_run_details[job['job_id']].get('formatted_duration', 'N/A') if last_run_details[job['job_id']] else 'N/A'}",
+                               style= {'font-size': '11px'}),
+
                         dbc.Button("Show All Runs", id={'type': 'show-all-runs-button', 'index': idx}, n_clicks=0, className="button-click-effect")
 
                     ]),
-                    style={"width": "15rem", 
+                    style={"width": "16rem", 
                            "height": "18rem",
                            "margin-right": "3rem",
                            "margin-left": "1.2rem",
@@ -221,9 +237,12 @@ def create_card_rows(jobs, cards_per_row=99):
         rows.append(row)
     return rows
 
+
+
 # initialises the section for the list of runs
 def initRunSection():
-    return html.P(f"No Jobs Were Selected", style= {"font-size": "15px", 'margin-top': "4px", 'margin-left': "10px"})
+    return html.P(f"No Jobs Were Selected", style= {"font-size": "15px", 'margin-top': "10px", 'margin-left': "10px"})
+
 
 
 # creates the list with checkboxes on the pop-up window 
@@ -264,8 +283,8 @@ isRorL = 0
 # App layout
 app.layout = html.Div([
     html.H1(html.Span('Job Details and Runs', style={'margin-left': '10px'}), 
-            style = {"color" : "#f0f0f0", "backgroundColor" : "#5c5c5c", "padding-bottom": "11px"}),
-    html.Div(id='job-cards'),
+            style = {"color" : "#f0f0f0", "backgroundColor" : "#5c5c5c", "padding-bottom": "10px"}),
+    html.Div(id='job-cards', style={'margin-top': '10px'}),
     dcc.Interval(
         id='interval-component',
         interval= 9999999999999,
@@ -297,21 +316,24 @@ app.layout = html.Div([
         )
     ], style = {"backgroundColor" : "#f0f0f0"}
 )
+
+
+
 # creates the list that appears after the user clicks a show all runs button
-def create_run_list(runs, job_name):
+def create_run_table(runs, job_name):
 
     """
-    Creates a list of job runs for display.
+    Creates a table of job runs for display.
 
     Args:
     runs (list): A list of runs to display.
     job_name (str): The name of the job associated with the runs.
 
     Returns:
-    list: A list of dbc.Row objects, each representing a job run.
+    list: A table, each row representing a job run.
     """
 
-    list_rows = []
+    table_rows = []
     for run in runs:
         # Convert start_time to readable format
         start_time = run.get('start_time')
@@ -350,17 +372,20 @@ def create_run_list(runs, job_name):
         linkRP = run.get('run_page_url', 'N/A')
 
         # Create a row for each run with border and colored result state
-        row = dbc.Row([
-            dbc.Col(html.P(job_name), style={'border': '1px solid gray', 'font-size': '13px', "margin-left": "20px"}, width=1),
-            dbc.Col(html.P(str(run.get('run_id', 'N/A'))), style={'border': '1px solid gray', 'font-size': '13px'}, width=2),
-            dbc.Col(html.P(start_timeR), style={'border': '1px solid gray', 'font-size': '13px'}, width=2),
-            dbc.Col(html.P(duration), style={'border': '1px solid gray', 'font-size': '13px'}, width=1),
-            dbc.Col(html.P(lifecycle_state), style={'border': '1px solid gray', 'font-size': '13px', 'color': lifecycle_color}, width=1),
-            dbc.Col(html.P(result_state, style={'color': result_color}), style={'border': '1px solid gray', 'font-size': '13px'}, width=1),
-            dbc.Col(html.P(html.A(f"Go to page" ,href = linkRP)), style={'border': '1px solid gray', 'font-size': '13px'}, width=2)
+        row = html.Tr([
+          html.Td(job_name, style={'font-size': '14px'}),
+          html.Td(str(run.get('run_id', 'N/A')), style={'font-size': '14px'}),
+          html.Td(start_timeR, style={'font-size': '14px'}),
+          html.Td(duration, style={'font-size': '14px'}),
+          html.Td(lifecycle_state, style={'color': lifecycle_color, 'font-size': '14px'}),
+          html.Td(result_state, style={'color': result_color, 'font-size': '14px'}),
+          html.Td(html.A("Go to page", href=linkRP), style={'font-size': '14px'})
         ])
-        list_rows.append(row)
-    return list_rows
+        table_rows.append(row)
+
+    table_body = [html.Tbody(table_rows)]
+    return table_body
+
 
 
 # Callback for handling button click
@@ -384,20 +409,29 @@ def display_click(button_clicks, n_intervals, button_states, selected_jobs):
             runs = jobRuns(job_id)
             job_name = selected_jobs[index].get('settings', {}).get('name', f"Job ID: {selected_jobs[index]['job_id']}")
 
+            table_header = [
+                html.Thead(html.Tr([
+                  html.Th("Job Name", style={'width': '10%', 'font-size': '14px'}),
+                  html.Th("Run ID", style={'width': '15%', 'font-size': '14px'}),
+                  html.Th("Start Time", style={'width': '15%', 'font-size': '14px'}),
+                  html.Th("Duration", style={'width': '10%', 'font-size': '14px'}),
+                  html.Th("Lifecycle State", style={'width': '15%', 'font-size': '14px'}),
+                  html.Th("Result State", style={'width': '15%', 'font-size': '14px'}),
+                  html.Th("Link", style={'width': '20%', 'font-size': '14px'})
+                ]))
+            ]
+            
+            table_body = create_run_table(runs, job_name)
+              
+            full__table = dbc.Table(table_header + table_body, bordered=True, hover=True, responsive=True, striped=True, className="runs-table custom-table-width")
+
             output_layout = [html.Div([
              html.P(f"Runs for the Job: {job_name}", 
-                   style={'color': 'black', 'font-size': '35px', 'margin-left': "10px"}),
-             dbc.Row([
-               dbc.Col(html.P(f"Job Name"), style={'font-weight': 'bold', 'font-size': '15px', "margin-left": "20px"}, width=1),
-               dbc.Col(html.P(f"Run ID"), style={'font-weight': 'bold', 'font-size': '15px'}, width=2),
-               dbc.Col(html.P(f"Start Time"), style={'font-weight': 'bold', 'font-size': '15px'}, width=2),
-               dbc.Col(html.P(f"Duration"), style={'font-weight': 'bold', 'font-size': '15px'}, width=1),
-               dbc.Col(html.P(f"State"), style={'font-weight': 'bold', 'font-size': '15px'}, width=1),
-               dbc.Col(html.P((f"Result")), style={'font-weight': 'bold', 'font-size': '15px'}, width=1),
-               dbc.Col(html.P((f"Link")), style={'font-weight': 'bold', 'font-size': '15px'}, width=2)
-               ]),
-             html.Div(create_run_list(runs, job_name), style={"margin-top": "16px"})
-              ])]
+                   style={'color': 'black', 'font-size': '30px', 'margin-left': "10px", 'margin-top': "25px"}),
+
+             html.Div(full__table)
+            ])]
+
 
             return output_layout
         return dash.no_update
@@ -453,11 +487,12 @@ def update_cards(n, checkbox_states, refreshB, jobs, isRorL):
     [State("configure-window", "is_open")],
 )
 
-
 def toggle_modal(n1, n2, is_open):
     if n1 or n2:
         return not is_open
     return is_open
+
+
 
 #updates the storage that holds which jobs were selected on the pop-up window. Only called after the button on the window is clicked
 @app.callback(
@@ -481,6 +516,7 @@ def update_checkbox_states(close_clicks, jobs, checked_states, indexes):
         return dash.no_update
     
 
+
 # Search function. Also upgrades the list on the pop-up window each time jobs are refreshed. 
 @app.callback(
     Output("job-list-container", "children"),
@@ -495,6 +531,8 @@ def update_job_list(search_value, jobs):
     else:
         # Filter the jobs based on the search input
         return listOfJobsW(jobs, filter_text=search_value)
+    
+
 
 if __name__ == '__main__':
     app.run_server(debug=False)
