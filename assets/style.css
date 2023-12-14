@@ -100,8 +100,8 @@
 
 .buttonC {
   position: fixed;
-  bottom: 20px;
-  right: 20px;
+  bottom: 10px;
+  right: 10px;
   z-index: 1000;
   appearance: none;
   background-color: #000000;
@@ -147,8 +147,8 @@
 
 .buttonR {
   position: fixed;
-  bottom: 90px;
-  right: 20px;
+  bottom: 80px;
+  right: 10px;
   z-index: 1000;
   appearance: none;
   background-color: #000000;
@@ -201,4 +201,29 @@
 
 body {
   background-color: #f0f0f0; 
+}
+
+/* Customising the table's size, colors, and borders */
+
+.runs-table td,
+.runs-table th {
+    border-right: 1px solid #6e6e6e;  /* Darker border color */
+    border-left: 1px solid #6e6e6e;
+    background-color: rgb(253, 253, 253);
+    font-size: 14px;
+}
+
+.runs-table td:last-child,
+.runs-table th:last-child {
+    border-right: 1px solid #dee2e6;
+}
+
+.runs-table td:first-child,
+.runs-table th:first-child {
+    border-left: 1px solid #dee2e6;
+}
+
+.custom-table-width {
+  width: 90%;
+  margin-left: 10px;
 }
