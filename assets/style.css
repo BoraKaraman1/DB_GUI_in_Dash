@@ -227,3 +227,45 @@ body {
   width: 90%;
   margin-left: 10px;
 }
+
+/* See All button on the modal */
+
+.buttonSeeAll {
+  appearance: none;
+  background-color: #000000;
+  border: 2px solid #1A1A1A;
+  border-radius: 9px;
+  box-sizing: border-box;
+  color: #FFFFFF;
+  cursor: pointer;
+  display: inline-block;
+  font-family: Roobert,-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
+  font-size: 11px;
+  font-weight: 600;
+  line-height: normal;
+  margin: 0;
+  min-height: 0px;
+  outline: none;
+  padding: 6px 9px;
+  text-align: center;
+  text-decoration: none;
+  transition: all 300ms cubic-bezier(.23, 1, 0.32, 1);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  will-change: transform;
+}
+
+.buttonSeeAll:hover {
+  box-shadow: rgba(0, 0, 0, 0.25) 0 8px 15px !important;
+  transform: translateY(-2px);
+  background-color: rgb(27, 20, 66) !important;
+  border: 2px solid rgb(44, 20, 66) !important;
+}
+
+.buttonSeeAll:active {
+  box-shadow: none;
+  transform: translateY(0);
+  background-color: rgb(53, 39, 131) !important;
+  border: 2px solid rgb(76, 38, 128) !important;
+}
