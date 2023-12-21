@@ -285,26 +285,38 @@ app.layout = html.Div([
     html.H1(html.Span('Job Details and Runs', style={'margin-left': '10px'}), 
             style = {"color" : "#ecf0f2", "backgroundColor" : "#5a5c5f", "padding-bottom": "10px"}),
     html.Div(id='job-cards', style={'margin-top': '10px'}),
+
+    # Interval for auto update of cards. It is disabled but left in the program in case a future developer decides to use it again. 
     dcc.Interval(
         id='interval-component',
         interval= 9999999999999,
         n_intervals=0,
         disabled= True
     ),
-    dbc.Button(html.Img(src="/assets/configure.png", style={'height':'27px', 'width':'27px'}), id= 'configure-button', n_clicks=0, className="buttonC"),
-    dbc.Button(html.Img(src="/assets/refresh.png", style={'height':'27px', 'width':'27px'}), id= 'refresh-button', n_clicks=0, className="buttonR"),
+    dbc.Button(html.Img(src="/assets/configure.png", style={'height':'22px', 'width':'22px'}), id= 'configure-button', n_clicks=0, className="buttonC"),
+    dbc.Button(html.Img(src="/assets/refresh.png", style={'height':'22px', 'width':'22px'}), id= 'refresh-button', n_clicks=0, className="buttonR"),
+    dbc.Button(html.Img(src="/assets/connection.png", style={'height':'22px', 'width':'22px'}), id= 'AdChange-button', n_clicks=0, className="buttonAdC"),
+
     html.Div(id='button-click-output', children = initRunSection()),
     dcc.Store(id='checkbox-states', storage_type='local'),
     dcc.Store(id = 'jobs', storage_type= 'local'),
     dcc.Store(id = 'selected_jobs', storage_type='local'),
+
+    # Stores that future address change functionality will use
+    dcc.Store(id = 'hostAddress', storage_type= 'local'),
+    dcc.Store(id = 'token', storage_type='local'),
+
+    # Store for tracking if the page was refreshed or loaded. Used by a callback.
     dcc.Store(id = 'isRorL', storage_type='memory', data = isRorL),
+    
+    # Modal for job selection 
     dbc.Modal(
             [
                 dbc.ModalHeader(html.H4("Jobs to Display", style={'font-size': '25px', 'color': '#ecf0f2'}),
                    style={'backgroundColor': '#5a5c5f'}),
                 dbc.ModalBody([
                    dbc.Input(id="job-search-bar", placeholder="Search jobs...", type="text", style={'margin-bottom' : '12px'}),
-                   dbc.Button("See All", id= "SAll", className= "buttonSeeAll"),
+                   dbc.Button("See All", id= "DSAll", className= "buttonSeeAll"),
                    dbc.Col(html.Div(id="job-list-container"))
                  ], style = {"backgroundColor" : "#ecf0f2"}
                 ),
@@ -314,7 +326,25 @@ app.layout = html.Div([
                 ),
             ],
             id="configure-window",
-        )
+        ),
+    
+    # Modal for address change
+    dbc.Modal(
+            [
+                dbc.ModalHeader(html.H4("Address Change", style={'font-size': '25px', 'color': '#ecf0f2'}),
+                   style={'backgroundColor': '#5a5c5f'}),
+                dbc.ModalBody([
+                   dbc.Input(id="host-entry-bar", placeholder=DOMAIN, type="url", style={'margin-bottom' : '12px'}),
+                   dbc.Input(id="token-enty-bar", placeholder="Enter token...", type="password", style={'margin-bottom' : '12px'})
+                 ], style = {"backgroundColor" : "#ecf0f2"}
+                ),
+                dbc.ModalFooter(
+                    dbc.Button("Change", id="close2", className="buttonConfClose"),
+                    style = {"backgroundColor" : "#ecf0f2"}
+                ),
+            ],
+            id="addressChange-window",
+        )    
     ], style = {"backgroundColor" : "#ecf0f2"}
 )
 
@@ -372,7 +402,7 @@ def create_run_table(runs, job_name):
         # Url is readied here for better readability of the code 
         linkRP = run.get('run_page_url', 'N/A')
 
-        # Create a row for each run with border and colored result state
+        # Create a table row for each run with border and colored result state
         row = html.Tr([
           html.Td(job_name, style={'font-size': '14px'}),
           html.Td(str(run.get('run_id', 'N/A')), style={'font-size': '14px'}),
@@ -462,7 +492,7 @@ def update_cards(n, checkbox_states, refreshB, jobs, isRorL):
         # On initial load
         jobs = list_jobs()
     elif context.triggered[0]['prop_id'] == 'checkbox-states.data' and isRorL == 0:
-         #If triggered by page load and refresh. RorL, being stored in memory, is made 0 in every refresh and load. This changes it to 1 so further updates of checboxes don't trigger it.
+         #If triggered by page load and refresh. RorL, being stored in memory, is made 0 in every refresh and load. This changes it to 1 so further updates of checkboxes don't trigger it.
         jobs = list_jobs()
         isRorL = 1
     elif context.triggered[0]['prop_id'] == 'refresh-button.n_clicks':
@@ -481,7 +511,7 @@ def update_cards(n, checkbox_states, refreshB, jobs, isRorL):
 
 
 
-#window opener
+#window opener for job selection
 @app.callback(
     Output("configure-window", "is_open"),
     [Input("configure-button", "n_clicks"), Input("close", "n_clicks")],
@@ -494,6 +524,17 @@ def toggle_modal(n1, n2, is_open):
     return is_open
 
 
+#window opener for address change 
+@app.callback(
+    Output("addressChange-window", "is_open"),
+    [Input("AdChange-button", "n_clicks"), Input("close2", "n_clicks")],
+    [State("addressChange-window", "is_open")],
+)
+
+def toggle_modal2(n1, n2, is_open):
+    if n1 or n2:
+        return not is_open
+    return is_open
 
 #updates the storage that holds which jobs were selected on the pop-up window. Only called after the button on the window is clicked
 @app.callback(
@@ -534,20 +575,25 @@ def update_job_list(search_value, jobs):
         return listOfJobsW(jobs, filter_text=search_value)
     
 
-# Callback and function for the "Select All" button on the modal
+
+# Callback and function for the "See All" button on the modal
 @app.callback(
+    
     Output({'type': 'dynamic-checkbox', 'index': dash.ALL}, 'value'),
-    Input("SAll", "n_clicks"),
+    Input("DSAll", "n_clicks"),
     State({'type': 'dynamic-checkbox', 'index': dash.ALL}, 'value'),
-    prevent_initial_call=True
+    prevent_initial_call = True
 )
 
-def SelectAll(SAll_clicks, checkboxes):
-    selected_checkboxes = []
-    for idx in range(len(checkboxes)):
-        selected_checkboxes.append(True)
+def deselectAll(DSAll_clicks, checkboxes):
+    if DSAll_clicks:
+     deselected_checkboxes = []
+     for idx in range(len(checkboxes)):
+        deselected_checkboxes.append(False)
 
-    return selected_checkboxes
+     return deselected_checkboxes
+    else:
+     return dash.no_update
 
 
 
